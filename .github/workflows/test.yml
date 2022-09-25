@@ -8,15 +8,66 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     if: github.event.repository.owner.id == github.event.sender.id
 
     steps:
+    
     - name: Checkout
       uses: actions/checkout@main
-    - name: Download SDK
+      
+    - name: Initialization Environment
       run: |
-        wget ${{ secrets.sdks_url }}/openwrt-sdk-22.03.0-rockchip-armv8_gcc-11.2.0_musl.Linux-x86_64.tar.xz
-    - name: show the file
+        wget -O - https://raw.githubusercontent.com/friendlyarm/build-env-on-ubuntu-bionic/master/install.sh | bash
+        
+    - name: Install Repo and initialize source for rk3328
       run: |
-        ls ./ -la
+        mkdir rk3328
+        cd rk3328
+        git clone https://github.com/friendlyarm/repo --depth 1 tools
+        tools/repo init -u https://github.com/friendlyarm/friendlywrt_manifests -b master-v22.03 \
+                -m rk3328.xml --repo-url=https://github.com/friendlyarm/repo  --no-clone-bundle
+        tools/repo sync -c  --no-clone-bundle
+        
+    - name: Add custom packages
+      run: |
+        cd rk3328/friendlywrt
+        wget https://github.com/QiuSimons/YAOF/raw/22.03/SCRIPTS/02_prepare_package.sh
+        bash 02_prepare_package.sh
+
+    - name: Build FriendlyWrt
+      run: |
+        cd rk3328
+        set +e
+        ./build.sh nanopi_r2s.mk
+        build_status=$?
+        set -e
+        sudo -E df -lh
+        exit $build_status
+
+    - name: Assemble Artifact
+      run: |
+        rm -rf ./artifact/
+        mkdir -p ./artifact/
+        gzip rk3328/out/FriendlyWrt*.img
+        cp rk3328/out/FriendlyWrt*.img.gz ./artifact/
+
+    # 保存交叉编译配置, 需要先设置平台
+    - name: Save Configurations
+      run: |
+        cd rk3328/friendlywrt
+        ./scripts/diffconfig.sh > ../../artifact/config-lite
+        cp .config ../../artifact/config-full
+        cd ../kernel
+        export PATH=/opt/FriendlyARM/toolchain/6.4-aarch64/bin/:$PATH
+        export CROSS_COMPILE='aarch64-linux-gnu-'
+        export ARCH=arm64
+        make savedefconfig
+        cp .config ../../artifact/kconfig-full
+        cp defconfig ../../artifact/kconfig-lite
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: FriendlyWrt
+        path: ./artifact/
