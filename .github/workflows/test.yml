@@ -1,0 +1,29 @@
+name: R2C-OpenWrt
+
+on:
+#  schedule:
+#    - cron: 5 6 * * 0
+  watch:
+    types: started
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+    - name: Interact with Google Drive
+      uses: satackey/action-google-drive@v1.2.1
+      with:
+        skicka-tokencache-json: ${{ secrets.SKICKA_TOKENCACHE_JSON }}
+        download-from: /FriendlyELEC-RK3238/04_SDK\ and\ toolchain/friendlywrt22/openwrt-sdk-22.03.0-rockchip-armv8_gcc-11.2.0_musl.Linux-x86_64.tar.xz
+        download-to: ./sdk.tar.xz
+
+        # For those who set up Google Drive API client ID and secret themselves
+        google-client-id: ${{ secrets.GOOGLE_CLIENT_ID }}
+        google-client-secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    - name: show the file
+      run: |
+        ls ./ -la
