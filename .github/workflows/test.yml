@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@main
     - name: Download SDK
       run: |
-        curl -LO ${{ secrets.sdks_url }}/openwrt-sdk-22.03.0-rockchip-armv8_gcc-11.2.0_musl.Linux-x86_64.tar.xz
+        wget ${{ secrets.sdks_url }}/openwrt-sdk-22.03.0-rockchip-armv8_gcc-11.2.0_musl.Linux-x86_64.tar.xz
     - name: show the file
       run: |
         ls ./ -la
