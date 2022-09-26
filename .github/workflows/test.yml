@@ -18,10 +18,10 @@ jobs:
       
     - name: Initialization Environment
       run: |
+        wget -O - https://raw.githubusercontent.com/friendlyarm/build-env-on-ubuntu-bionic/master/install.sh | bash
         git config --global user.email "yuaolni@gmail.com"
         git config --global user.name "MoozIiSP"
-        wget -O - https://raw.githubusercontent.com/friendlyarm/build-env-on-ubuntu-bionic/master/install.sh | bash
-        
+
     - name: Install Repo and initialize source for rk3328
       run: |
         mkdir rk3328
